@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8" />
+  <title>Redirecting…</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
+    .box { text-align:center; }
+    a { color:#0645ad; }
+  </style>
+  <script>
+    // 目标地址（B站），注意它已经包含了查询字符串
+    const targetBase = "https://carterevan.github.io/hucai666/index"; 
+
+    // 从当前 URL 获取查询字符串（不包含 ? 的那部分），如果没有则为空字符串
+    const srcQuery = window.location.search ? window.location.search.substring(1) : "";
+
+    // 把当前页面的查询参数附加到目标地址。
+    // 如果srcQuery为空则直接跳转到targetBase
+    function buildTarget() {
+      if (!srcQuery) return targetBase;
+      // 目标是否已经有 ?（示例中已有，所以通常是 true）
+      return targetBase + (targetBase.indexOf("?") === -1 ? "?" : "&") + srcQuery;
+    }
+
+    // 立即跳转（若需等待或展示提示可改为延迟）
+    const finalUrl = buildTarget();
+    // 控制台输出便于调试
+    console.log("Redirecting to:", finalUrl);
+    // 使用 location.replace 避免在浏览器历史留下中间页
+    window.location.replace(finalUrl);
+  </script>
+</head>
+<body>
+  <div class="box">
+    <h2>正在跳转，请稍候…</h2>
+    <p>如果没有自动跳转，请点击下面的链接：</p>
+    <p><a id="fallback" href="#">前往目标页面</a></p>
+    <script>
+      // 为了防止 JS 被阻止，设置一个 fallback 链接
+      document.getElementById('fallback').href = (function(){
+        try { return buildTarget(); } catch(e) { return targetBase; }
+      })();
+    </script>
+  </div>
+</body>
+</html>
